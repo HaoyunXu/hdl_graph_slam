@@ -81,6 +81,8 @@ private:
     }
 
     use_distance_filter = private_nh.param<bool>("use_distance_filter", true);
+    half_width = private_nh.param<double>("half_width", 1.0);
+    half_length=private_nh.param<double>("half_length", 2.5);
     distance_near_thresh = private_nh.param<double>("distance_near_thresh", 1.0);
     distance_far_thresh = private_nh.param<double>("distance_far_thresh", 100.0);
 
@@ -148,8 +150,21 @@ private:
 
     std::copy_if(cloud->begin(), cloud->end(), std::back_inserter(filtered->points),
       [&](const PointT& p) {
-        double d = p.getVector3fMap().norm();
-        return d > distance_near_thresh && d < distance_far_thresh;
+        auto v = p.getVector3fMap();
+        double d = v.norm();
+        double x = v[0];
+        double y = v[1];
+        double z = v[2];
+
+        bool dist_check = d > distance_near_thresh && d < distance_far_thresh;
+        bool long_check = std::abs(x)>half_width;
+        bool lat_check  = std::abs(y)>half_length;
+
+        // std:: cout << x << " " << y << " " << z << " " << d << "\n";
+        // std:: cout << "\t" << dist_check << " " << long_check << " " << lat_check << "\n";
+        // std::cout << "\t\t" << (dist_check && (long_check || lat_check)) << "\n";
+
+        return dist_check && (long_check || lat_check);
       }
     );
 
@@ -174,6 +189,8 @@ private:
   std::string base_link_frame;
 
   bool use_distance_filter;
+  double half_width;
+  double half_length;
   double distance_near_thresh;
   double distance_far_thresh;
 
